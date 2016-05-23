@@ -26,6 +26,8 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", inline: <<-SHELL
     sudo apt-get update
     sudo apt-get install -y git
+    sudo apt-get install -y python-pip
+    sudo pip install awscli
     sudo npm install serverless -g
   SHELL
 end
