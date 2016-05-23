@@ -1,0 +1,60 @@
+{
+  "name": "echo_aws_iam_authorization",
+  "runtime": "nodejs4.3",
+  "description": "Serverless Lambda function for project: serverless-echo-demo",
+  "customName": false,
+  "customRole": false,
+  "handler": "handler.handler",
+  "timeout": 6,
+  "memorySize": 512,
+  "authorizer": {},
+  "custom": {
+    "cors": {
+      "allowOrigin": "*",
+      "allowHeaders": ["Content-Type", "X-Amz-Date", "Authorization", "X-Api-Key","X-Amz-Security-Token"]
+    },
+    "excludePatterns": []
+  },
+  "endpoints": [
+    {
+      "path": "echo_aws_iam_authorization/{echo}",
+      "method": "GET",
+      "type": "AWS",
+      "authorizationType": "none",
+      "authorizerFunction": false,
+      "apiKeyRequired": false,
+      "requestParameters": {},
+      "requestTemplates": {
+        "application/json": {
+          "apigw": "$${apiRequestTemplate}"
+        }
+      },
+      "responses": "$${apiResponseTemplate}"
+    },
+    {
+      "path": "echo_aws_iam_authorization",
+      "method": "POST",
+      "type": "AWS",
+      "authorizationType": "none",
+      "authorizerFunction": false,
+      "apiKeyRequired": false,
+      "requestParameters": {},
+      "requestTemplates": {
+        "application/json": {
+          "apigw": "$${apiRequestTemplate}"
+        }
+      },
+      "responses": "$${apiResponseTemplate}"
+    }
+  ],
+  "events": [],
+  "environment": {
+    "SERVERLESS_PROJECT": "${project}",
+    "SERVERLESS_STAGE": "${stage}",
+    "SERVERLESS_REGION": "${region}"
+  },
+  "vpc": {
+    "securityGroupIds": [],
+    "subnetIds": []
+  }
+}

@@ -7,9 +7,6 @@
     "payload": "$input.json('$')"
   },
   "apiResponseTemplate": {
-    "204 No Content:.*": {
-      "statusCode": "204"
-    },
     "400 Bad Request:.*": {
       "statusCode": "400"
     },
