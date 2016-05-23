@@ -1,5 +1,7 @@
 {
   "name": "serverless-echo-demo",
   "custom": {},
-  "plugins": []
+  "plugins": [
+    "serverless-cors-plugin"
+  ]
 }
