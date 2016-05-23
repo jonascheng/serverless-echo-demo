@@ -51,3 +51,9 @@ admin.env
 # Ignore _meta folder
 _meta
 
+# Ignore AWS SDK
+test/apigClient.js
+test/dist/*
+test/lib/*
+test/README.md
+
