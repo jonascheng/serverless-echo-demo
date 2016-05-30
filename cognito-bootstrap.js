@@ -6,7 +6,7 @@ let program = require('commander');
 let AWS = require('aws-sdk');
 
 let deployIAMRole = function() {
-  return new Promise(function(fulfill, reject) {
+  return new Promise(function(resolve, reject) {
     let params;
     let authAssumeRolePolicyDoc = {
       "Version": "2012-10-17",
@@ -46,6 +46,8 @@ let deployIAMRole = function() {
     };
 
     let iam = new AWS.IAM();
+    let authrole = 'Cognito_' + program.identitypool + '_AuthRole'
+    let unauthrole = 'Cognito_' + program.identitypool + '_UnauthRole'
     params = {
       AssumeRolePolicyDocument: JSON.stringify(authAssumeRolePolicyDoc),
       /* required */
@@ -57,18 +59,14 @@ let deployIAMRole = function() {
         reject(err); // an error occurred
       } else {
         console.log(data); // successful response
-        fulfill(data);
+        resolve(data);
       }
     });
   });
 };
 
-let removeIAMRole = function() {
-
-};
-
 let checkIdentityPoolExist = function() {
-  return new Promise(function(fulfill, reject) {
+  return new Promise(function(resolve, reject) {
     let cognitoidentity = new AWS.CognitoIdentity();
 
     // check if identity pool exist
@@ -90,7 +88,7 @@ let checkIdentityPoolExist = function() {
             }
           });
           if (typeof data.NextToken === "undefined") {
-            fulfill(data);
+            resolve(data);
           }
           next = data.NextToken;
         }
@@ -132,8 +130,210 @@ let deployIdentityPool = function() {
   });
 }
 
-let removeIdentityPool = function() {
+function IdentityPoolOP(_identityPoolName) {
+  function lookupIdentityPool(identityPoolName, identityPoolId, next) {
+    let deferred = Promise.defer();
 
+    let params;
+    if (typeof next === "undefined") { // no further request, stop condition
+      deferred.resolve(identityPoolId);
+    } else if (next !== "") { // need further request
+      params = {
+        MaxResults: 1,
+        /* required */
+        NextToken: next
+      };
+    } else { // first request
+      params = {
+        MaxResults: 1,
+        /* required */
+      };
+    }
+
+    let cognitoidentity = new AWS.CognitoIdentity();
+    cognitoidentity.listIdentityPools(params, function(err, data) {
+      if (err) {
+        deferred.reject(err);
+      } else {
+        data.IdentityPools.forEach(function(currentValue) {
+          if (currentValue.IdentityPoolName === identityPoolName) {
+            console.log('>> found corresponding identity id:', currentValue.IdentityPoolId);
+            identityPoolId = currentValue.IdentityPoolId;
+          }
+        });
+        lookupIdentityPool(identityPoolName, identityPoolId, data.NextToken)
+          .then(function(identityPoolId) {
+            deferred.resolve(identityPoolId);
+          });
+      }
+    });
+
+    return deferred.promise;
+  };
+
+  // delete identity pool
+  function deleteIdentityPool(identityPoolId) {
+    return new Promise(function(resolve, reject) {
+      if (identityPoolId === "") { // no identity pool id
+        resolve(true);
+      } else {
+        console.log('>> Delete identity id:', identityPoolId);
+
+        let cognitoidentity = new AWS.CognitoIdentity();
+
+        let params = {
+          IdentityPoolId: identityPoolId
+          /* required */
+        };
+
+        cognitoidentity.deleteIdentityPool(params, function(err, data) {
+          if (err) {
+            reject(err);
+          } else {
+            console.log('>> Deleted identity pool id:', identityPoolId);
+            resolve(true);
+          }
+        });
+      }
+    });
+  };
+
+  // add IAM role
+  function addIAMRole(iamRoleName, assumeRolePolicyDocument) {
+    return new Promise(function(resolve, reject) {
+      console.log('>> Add IAM role:', iamRoleName);
+
+      let iam = new AWS.IAM();
+      let params = {
+        AssumeRolePolicyDocument: JSON.stringify(assumeRolePolicyDocument),
+        /* required */
+        RoleName: iamRoleName
+        /* required */
+      };
+      iam.createRole(params, function(err, data) {
+        if (err) {
+          if (err.code === "EntityAlreadyExists") { // ignore this error
+            console.log('>> Existing IAM role:', iamRoleName);
+            resolve(true);
+          } else
+            reject(err); // an error occurred
+        } else {
+          console.log('>> Added IAM role:', iamRoleName);
+          resolve(true);
+        }
+      });
+    });
+  };
+
+  // delete IAM role
+  function deleteIAMRole(iamRoleName) {
+    return new Promise(function(resolve, reject) {
+      console.log('>> Delete IAM role:', iamRoleName);
+
+      let iam = new AWS.IAM();
+      let params = {
+        RoleName: iamRoleName
+        /* required */
+      };
+      iam.deleteRole(params, function(err, data) {
+        if (err) {
+          if (err.code === "NoSuchEntity") // ignore this error
+            resolve(true);
+          else
+            reject(err);
+        } else {
+          console.log('>> Deleted IAM role:', iamRoleName);
+          resolve(true);
+        }
+      });
+    });
+  };
+
+  this.removeIdentityPool = function(identityPoolName) {
+    return new Promise(function(resolve, reject) {
+      console.log('>> Delete identity pool:', identityPoolName);
+
+      lookupIdentityPool(identityPoolName, "", "")
+        .then(deleteIdentityPool)
+        .then(function() {
+          resolve(identityPoolName);
+        })
+        .catch(function(e) {
+          reject(e);
+        });
+    });
+  };
+
+  this.deployIAMRole = function(identityPoolName) {
+    return new Promise(function(resolve, reject) {
+      // compose IAM role anme
+      let authrole = 'Cognito_' + program.identitypool + '_AuthRole'
+      let unauthrole = 'Cognito_' + program.identitypool + '_UnauthRole'
+        // compose assume role policy document
+      let authAssumeRolePolicyDoc = {
+        "Version": "2012-10-17",
+        "Statement": [{
+          "Effect": "Allow",
+          "Principal": {
+            "Federated": "cognito-identity.amazonaws.com"
+          },
+          "Action": "sts:AssumeRoleWithWebIdentity",
+          "Condition": {
+            "StringEquals": {
+              "cognito-identity.amazonaws.com:aud": "ap-northeast-1:cec6fd54-188e-4226-af8f-7e0c6cb3aa4e"
+            },
+            "ForAnyValue:StringLike": {
+              "cognito-identity.amazonaws.com:amr": "authenticated"
+            }
+          }
+        }]
+      };
+      let unauthAssumeRolePolicyDoc = {
+        "Version": "2012-10-17",
+        "Statement": [{
+          "Effect": "Allow",
+          "Principal": {
+            "Federated": "cognito-identity.amazonaws.com"
+          },
+          "Action": "sts:AssumeRoleWithWebIdentity",
+          "Condition": {
+            "StringEquals": {
+              "cognito-identity.amazonaws.com:aud": "ap-northeast-1:247a8715-a43d-4af7-8030-2574188bd632"
+            },
+            "ForAnyValue:StringLike": {
+              "cognito-identity.amazonaws.com:amr": "unauthenticated"
+            }
+          }
+        }]
+      };
+      let p1 = addIAMRole(authrole, authAssumeRolePolicyDoc);
+      let p2 = addIAMRole(unauthrole, unauthAssumeRolePolicyDoc);
+      Promise.all([p1, p2])
+        .then(function() {
+          resolve(identityPoolName);
+        })
+        .catch(function(e) {
+          reject(e);
+        })
+    });
+  };
+
+  this.removeIAMRole = function(identityPoolName) {
+    return new Promise(function(resolve, reject) {
+      // compose IAM role name
+      let authrole = 'Cognito_' + identityPoolName + '_AuthRole'
+      let unauthrole = 'Cognito_' + identityPoolName + '_UnauthRole'
+      let p1 = deleteIAMRole(authrole);
+      let p2 = deleteIAMRole(unauthrole);
+      Promise.all([p1, p2])
+        .then(function() {
+          resolve(identityPoolName);
+        })
+        .catch(function(e) {
+          reject(e)
+        });
+    });
+  };
 };
 
 program
@@ -183,6 +383,7 @@ AWS.config.credentials = credentials;
 
 if (program.deploy) {
   console.log('>> Deploy identity pool configurations to AWS');
+  /*
   deployIAMRole()
     .then(checkIdentityPoolExist)
     .then(deployIdentityPool)
@@ -194,28 +395,21 @@ if (program.deploy) {
         console.error(e);
       }
     });
-
+*/
+  let obj = new IdentityPoolOP(program.identitypool);
+  obj.deployIAMRole(program.identitypool)
+    .catch(function(e) {
+      console.error(e);
+    });
 } else if (program.remove) {
-  console.error('>> Remove identity pool configurations from AWS');
-  removeIdentityPool();
+  console.log('>> Remove identity pool configurations from AWS');
+  let obj = new IdentityPoolOP(program.identitypool);
+  obj.removeIdentityPool(program.identitypool)
+    .then(obj.removeIAMRole)
+    .catch(function(e) {
+      console.error(e);
+    });
 } else {
   console.error('>> no deploy or remove given!');
   program.help();
 }
-/*
-let deployA = function() {
-  return new Promise(function(fulfill, reject) {
-    console.log('deployA');
-    fulfill('deployA');
-  });
-}
-
-let deployB = function() {
-  return new Promise(function(fulfill, reject) {
-    console.log('deployB');
-    fulfill('deployB');
-  });
-}
-
-deployA().then(deployB);
-*/
