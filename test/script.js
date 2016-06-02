@@ -4,7 +4,8 @@ function foo() {
 
   var cognitoidentity = new AWS.CognitoIdentity();
   var params = {
-    IdentityPoolId: 'ap-northeast-1:247a8715-a43d-4af7-8030-2574188bd632'
+    //IdentityPoolId: 'ap-northeast-1:247a8715-a43d-4af7-8030-2574188bd632'
+    IdentityPoolId: 'ap-northeast-1:d64cb7ff-e721-44b6-bc67-b6552d2b2919'
   };
 
   // Generate a Cognito ID for the 1st time, so IdentityId could be kept for future use
