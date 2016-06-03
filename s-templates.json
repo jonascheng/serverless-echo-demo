@@ -26,7 +26,7 @@
       "statusCode": "200",
       "responseParameters": {},
       "responseModels": {
-        "application/json;charset=UTF-8": "Empty"
+        "application/json": "responseModel"
       },
       "responseTemplates": {
         "application/json;charset=UTF-8": ""

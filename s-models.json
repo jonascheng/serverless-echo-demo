@@ -1,0 +1,29 @@
+{
+  "requestModel": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Request Schema",
+    "type": "object",
+    "properties": {
+      "payload": {
+        "type": "object"
+      }
+    }
+  },
+  "responseModel": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Response Schema",
+    "type": "object",
+    "properties": {
+      "message": {
+        "type": "string"
+      },
+      "request": {
+        "type": "object"
+      }
+    },
+    "required": [
+      "message",
+      "request"
+    ]
+  }
+}

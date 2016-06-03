@@ -2,6 +2,7 @@
   "name": "serverless-echo-demo",
   "custom": {},
   "plugins": [
-    "serverless-cors-plugin"
+    "serverless-cors-plugin",
+    "serverless-models-plugin"
   ]
 }

@@ -39,6 +39,9 @@
       "authorizerFunction": false,
       "apiKeyRequired": false,
       "requestParameters": {},
+      "requestModels": {
+        "application/json": "requestModel"
+      },
       "requestTemplates": {
         "application/json": {
           "apigw": "$${apiRequestTemplate}"
