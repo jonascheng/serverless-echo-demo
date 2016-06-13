@@ -4,10 +4,13 @@
     "title": "Request Schema",
     "type": "object",
     "properties": {
-      "payload": {
-        "type": "object"
+      "echo": {
+        "type": "string"
       }
-    }
+    },
+    "required": [
+      "echo"
+    ]
   },
   "responseModel": {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -18,7 +21,43 @@
         "type": "string"
       },
       "request": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "apigw": {
+            "type": "object",
+            "properties": {
+              "httpMethod": {
+                "type": "string"
+              },
+              "queryParams": {
+                "type": "string"
+              },
+              "pathParams": {
+                "type": "string"
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "echo": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "echo"
+                ]
+              }
+            },
+            "required": [
+              "httpMethod",
+              "queryParams",
+              "pathParams",
+              "payload"
+            ]
+          }
+        },
+        "required": [
+          "apigw"
+        ]
       }
     },
     "required": [
