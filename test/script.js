@@ -4,7 +4,7 @@ function foo() {
 
   var cognitoidentity = new AWS.CognitoIdentity();
   var params = {
-    IdentityPoolId: 'ap-northeast-1:5d1fb8b6-ddea-4efc-8020-9f28b570b369'
+    IdentityPoolId: 'identity-pool-id'
   };
 
   // Generate a Cognito ID for the 1st time, so IdentityId could be kept for future use
@@ -41,16 +41,6 @@ function foo() {
         echo: "1234"
       };
 
-      apigClient.echoAwsIamAuthorizationPost(params, body).then(function(result) {
-        //This is where you would put a success callback
-        console.log(result);
-        alert(JSON.stringify(result.data));
-      }).catch(function(result) {
-        //This is where you would put an error callback
-        console.log(result);
-        alert("Oops foo!");
-      });
-
       apigClient.echoAwsIamAuthorizationEchoGet(params, body).then(function(result) {
         //This is where you would put a success callback
         console.log(result);
@@ -61,8 +51,16 @@ function foo() {
         alert("Oops foo!");
       });
 
+      apigClient.echoAwsIamAuthorizationPost(params, body).then(function(result) {
+        //This is where you would put a success callback
+        console.log(result);
+        alert(JSON.stringify(result.data));
+      }).catch(function(result) {
+        //This is where you would put an error callback
+        console.log(result);
+        alert("Oops foo!");
+      });
     })
-
   });
 }
 
